@@ -15,4 +15,4 @@ build/
 
 # Environment Variables & Logs
 .env
-*.log
+*.lo
