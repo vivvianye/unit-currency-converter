@@ -7,11 +7,42 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<!-- Шапка з назвою застосунку -->
-<!-- Блок вибору типу конвертації (валюта / довжина / вага) -->
-<!-- Форма введення значення й одиниць -->
-<!-- Блок результату -->
-<!-- Підвал -->
+    <header>
+        <h1>Конвертер валют і одиниць</h1>
+    </header>
+
+<main>
+    <section>
+        <h2>Вибір типу конвертації</h2>
+    </section>
+
+    <section>
+        <h2>Форма конвертації</h2>
+        <form>
+            <label for="val">Значення:</label>
+            <input type="text" id="val" name="val">
+
+            <label for="from">З:</label>
+            <select id="from" name="from">
+                <option value="usd">USD</option>
+            </select>
+
+            <label for="to">В:</label>
+            <select id="to" name="to">
+                <option value="uah">UAH</option>
+            </select>
+        </form>
+
+        <div>
+            <h3>Результат</h3>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <p>Курси валют є орієнтовними. &copy 2026</p>
+</footer>
+
 <script src="js/app.js"></script>
 </body>
 </html>
