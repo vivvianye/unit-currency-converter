@@ -15,6 +15,7 @@ header {
     background-color: #ffffff;
     padding: 20px;    
     border-bottom: 1px solid #1B3C53;
+    text-align: center;
 }
 
 header h1 {
@@ -23,8 +24,7 @@ header h1 {
 }
 
 main {
-    max-width: 600px;
-    margin: 0 auto;
+    width: 100%;
     padding: 20px;
 }
 
@@ -52,7 +52,6 @@ input, select {
     font-size: 1.1rem;
     border: 1px solid #1B3C53;
     border-radius: 6px;
-    margin-bottom: 16px;
     font-family: monospace;
 }
 
@@ -68,6 +67,14 @@ button {
     color: #ffffff;
     cursor: pointer;
     font-family: monospace;
+    margin-bottom: 10px;
+    display: flex;
+    width: 100%;
+}
+
+.types {
+    flex: 1;
+    gap: 8px;
 }
 
 button:hover {
@@ -80,4 +87,79 @@ footer {
     color: #E3E3E3;
     background-color: #456882;
     text-align: center;
+}
+
+.swap-btn {
+    width: 100%;
+    margin: 8px 0;
+    padding: 12px;
+    background-color: #1B3C53;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.result {
+    margin-top: 16px;
+}
+
+.submit-btn {
+    display: block;
+    width: 100%;
+    margin-top: 16px;
+}
+
+@media (min-width: 600px) {
+    main {
+        max-width: 580px;
+        margin: 0 auto;
+    }
+
+    form {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .swap-btn {
+        width: auto;
+        margin: 0;
+    }
+
+    .fields {
+        display: flex;
+        gap: 8px;
+        width: 100%;
+        align-items: center;
+    }
+    
+    select {
+        flex: 1;
+    }
+    
+}
+
+@media (min-width: 1024px) {
+    header {
+        padding: 24px;
+    }
+
+    header h1 {
+        font-size: 2rem;
+    }
+
+    main {
+        max-width: 680px;
+        padding: 40px 0;
+    }
+
+    section {
+        padding: 32px;
+        margin-bottom: 24px;
+    }
+
 }

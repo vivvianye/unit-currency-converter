@@ -12,7 +12,7 @@
     </header>
 
 <main>
-    <section>
+    <section class="types">
         <h2>Вибір типу конвертації</h2>
         <button type="button">Валюта</button>
         <button type="button">Довжина</button>
@@ -25,23 +25,27 @@
             <label for="val">Значення:</label>
             <input type="text" id="val" name="val">
 
-            <label for="from">З:</label>
-            <select id="from" name="from">
-                <option value="usd">USD</option>
-                <option value="eur">KG</option>
-            </select>
+            <div class="fields">
+                <label for="from">З:</label>
+                <select id="from" name="from">
+                    <option value="usd">USD</option>
+                    <option value="eur">KG</option>
+                </select>
+                <button type="button" class="swap-btn" aria-label="Поміняти місцями">⇄</button>
 
-            <label for="to">В:</label>
-            <select id="to" name="to">
-                <option value="uah">UAH</option>
-                <option value="usd">GR</option>
-            </select>
-            <button type="submit">Конвертувати</button>
+                <label for="to">В:</label>
+                <select id="to" name="to">
+                    <option value="uah">UAH</option>
+                    <option value="usd">GR</option>
+                </select>
+            </div>
+
+            <button type="submit" class="submit-btn">Конвертувати</button>
         </form>
 
-        <div>
-            <h3>Результат: </h3>
-        </div>
+        <section class="result">
+            <h3>Результат: <span>0.00</span></h3>
+        </section>
     </section>
 </main>
 
