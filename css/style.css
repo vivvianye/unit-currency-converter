@@ -142,7 +142,6 @@ form {
     select {
         flex: 1;
     }
-    
 }
 
 @media (min-width: 1024px) {
@@ -163,5 +162,4 @@ form {
         padding: 32px;
         margin-bottom: 24px;
     }
-
 }
