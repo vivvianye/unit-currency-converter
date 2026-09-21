@@ -4,9 +4,18 @@
     box-sizing: border-box;
 }
 
+/* 
+  Виконання нечіткої вимоги, що інтерфейс має "викликати довіру".
+  Для реалізації цього задуму обрано стриману "фінансову" палітру, базою якої є темно-сині відтінки (#1B3C53, #234C6A) та нейтральний світло-сірий фон (#E3E3E3). 
+  Ці кольори  асоціюються зі стабільністю та безпекою , тому інтерфейс виглядає серйозним і професійним. 
+  Я свідомо уникнула крикливих яскравих кольорів, залишивши лише один помітний, але спокійний темно-зелений акцент (#1F6B4F) для кнопки обміну валют.
+*/
+
 body {
     margin: 0;
-    font-family: 'Prestige', Courier, monospace;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
     color: #1B3C53;
     background-color: #E3E3E3;
 }
@@ -22,7 +31,8 @@ header {
 header h1 {
     margin: 0;
     padding-left: 20px;
-    font-size: 1.8rem;
+    font-family: Georgia, serif;
+    font-size: 28px;
 }
 
 main {
@@ -39,22 +49,25 @@ section {
 }
 
 section h2 {
-    margin-top: 0;
+    font-family: Georgia, serif;
+    font-size: 20px;
 }
 
 label {
     display: block;
     margin-bottom: 5px;
     font-weight: bold;
+    font-size: 14px;
 }
 
 input, select {
     width: 100%;
-    padding: 12px;
-    font-size: 1.1rem;
+    height: 44px;
+    padding: 0 12px;
+    font-size: 16px;
     border: 1px solid #1B3C53;
     border-radius: 6px;
-    font-family: monospace;
+    font-family: inherit;
 }
 
 input:focus, select:focus {
@@ -62,16 +75,19 @@ input:focus, select:focus {
 }
 
 button {
-    padding: 12px 24px;
-    font-size: 1.1rem;
+    height: 44px;
+    padding: 0 24px;
+    font-size: 16px;
     border-radius: 6px;
     background-color: #234C6A;
     color: #ffffff;
     cursor: pointer;
-    font-family: monospace;
-    margin-bottom: 10px;
+    font-family: inherit;
+    justify-content: center;
     display: flex;
     width: 100%;
+    line-height: 2.25;
+    margin-top: 16px;
 }
 
 .types {
@@ -85,8 +101,8 @@ button:hover {
 
 footer {
     padding: 20px;
-    font-size: 1.1rem;
-    color: #E3E3E3;
+    font-size: 14px;
+    color: #ffffff;
     background-color: #456882;
     text-align: center;
 }
@@ -94,8 +110,7 @@ footer {
 .swap-btn {
     width: 100%;
     margin: 8px 0;
-    padding: 12px;
-    background-color: #1B3C53;
+    background-color: #1F6B4F;
 }
 
 form {
