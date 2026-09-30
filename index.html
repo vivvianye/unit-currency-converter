@@ -23,8 +23,8 @@
     <section>
         <h2>Форма конвертації</h2>
         <form>
-            <label for="val">Значення:</label>
-            <input type="text" id="val" name="val">
+            <label for="amount">Значення:</label>
+            <input type="number" id="amount" name="amount" min="0.01" step="any" required>
 
             <div class="fields">
                 <label for="from">З:</label>
@@ -53,6 +53,11 @@
         <h2>Курси валют</h2>
         <ul id="rates-list"></ul>
         <p id="rates-count">Кількість валют: 0</p>
+    </section>
+
+    <section class="history">
+        <h2>Історія конвертацій</h2>
+        <ul id="history-list"></ul>
     </section>
 </main>
 
