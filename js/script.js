@@ -60,3 +60,4 @@ ratesCount.textContent = `Кількість валют: ${Object.keys(exchangeR
 const testResult = convert(100, exchangeRates.UAH);
 console.log(`Тест Кроку 7 (100 USD у гривнях): ${testResult} UAH`);
 
+checkAmount(150, exchangeRates.UAH);
