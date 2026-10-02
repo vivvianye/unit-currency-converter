@@ -128,3 +128,4 @@ function updateResult() {
 
 // Обробники change: при зміні валюти одразу перераховуємо результат без сабміту.
 fromSelect.addEventListener('change', updateResult);
+toSelect.addEventListener('change', updateResult);
