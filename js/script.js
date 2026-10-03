@@ -7,6 +7,20 @@ const exchangeRates = {
 const listContainer = document.querySelector('#rates-list');
 const BIG_RATE_THRESHOLD = 10;
 
+const loadingEl = document.querySelector('#loading');
+
+function showLoading(isLoading) {
+    loadingEl.hidden = !isLoading;
+}
+
+const errorEl = document.querySelector('#error');
+
+function showError(message) {
+    errorEl.textContent = message;
+    errorEl.hidden = !message;
+}
+
+const API_URL = 'https://api.frankfurter.dev/v2/rate/usd/uah';
 
 // Функція перебирає об'єкт із курсами валют і виводить кожен курс у консоль.
 function showRates(ratesObj) {
@@ -129,3 +143,40 @@ function updateResult() {
 // Обробники change: при зміні валюти одразу перераховуємо результат без сабміту.
 fromSelect.addEventListener('change', updateResult);
 toSelect.addEventListener('change', updateResult);
+
+/**
+ * Завантажує курс USD → UAH з Frankfurter API
+ * (https://api.frankfurter.dev/v2), перевіряє статус відповіді,
+ * виводить дані через renderRates і обробляє помилки.
+ */
+async function loadData() {
+    showLoading(true);
+    try {
+        showError('');
+        const response = await fetch(API_URL);
+        if (response.status === 422 || response.status === 404) {
+            throw new Error('INVALID_CURRENCY');
+        } if (!response.ok) {
+            throw new Error(`Сервер відповів кодом ${response.status}`);
+        }
+        const data = await response.json();
+        console.log(data);
+        renderRates({ [data.quote]: data.rate });
+        ratesCount.textContent = `1 ${data.base} = ${data.rate} ${data.quote} (станом на ${data.date})`;
+        
+    } catch (error) {
+        listContainer.replaceChildren();
+        if (error.message === 'INVALID_CURRENCY') {
+            showError('Перевірте код валюти.');
+        } else {
+            showError('Не вдалося завантажити курси валют. Спробуйте пізніше.');
+        }
+        console.error(error);
+    } finally {
+        showLoading(false);
+    }
+}
+loadData();
+
+const refreshBtn = document.querySelector('#refresh-btn');
+refreshBtn.addEventListener('click', loadData);
