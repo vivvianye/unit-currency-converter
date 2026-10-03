@@ -31,6 +31,13 @@ function checkAmount(amount, rate) {
     }
 }
 
+const staticList = document.querySelector('#list');
+if (staticList) {
+    staticList.remove();
+}
+
+renderRates(exchangeRates);
+
 // Рендер списку валют: очищає #rates-list і для кожної пари [валюта, курс]
 // створює li з текстом «USD: 1», атрибутом data-rate
 // та класом big-rate, якщо курс більший за поріг.
