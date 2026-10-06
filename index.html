@@ -38,7 +38,8 @@
             </section>
 
             <section class="history">
-                <h2>Історія конвертацій</h2>
+                <h2>Історія конвертацій (останні 10)</h2>
+                <p v-if="dbError">{{ dbError }}</p>
                 <ul>
                     <li v-for="record in history" :key="record.id">
                         {{ record.amount }} {{ record.from }} = {{ record.result }} {{ record.to }}

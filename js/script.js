@@ -12,9 +12,121 @@
  * querySelector та innerHTML для цієї ділянки більше не використовуються.
  */
 
+/*
+ * Модель запису історії конвертацій (ПР11, варіант 6):
+ * {
+ *id: число, унікальний ідентифікатор,
+ *from: рядок, одиниця «З» (наприклад, "USD"),
+ *to: рядок, одиниця «В» (наприклад, "UAH"),
+ *amount: число, введена сума,
+ *result: рядок, відформатований результат,
+ *timestamp: число, час створення в мілісекундах (Date.now())
+ * }
+ */
+
 const { createApp } = Vue;
 const formatNumber = n => (n === 0 ? '0.00' : String(Number(n.toPrecision(6))));
 const API_URL = 'https://api.frankfurter.dev/v2/rate/usd/uah';
+
+const LS_KEY = 'converterHistory';
+
+function saveToLocalStorage(items) {
+    localStorage.setItem(LS_KEY, JSON.stringify(items));
+}
+
+function loadFromLocalStorage() {
+    try {
+        const raw = localStorage.getItem(LS_KEY);
+        const data = raw ? JSON.parse(raw) : [];
+        return Array.isArray(data) ? data : [];
+    } catch (error) {
+        console.error('Пошкоджені дані в localStorage:', error);
+        return [];
+    }
+}
+
+const DB_NAME = 'ConverterDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'history';
+let dbPromise = null;
+
+// Відкриває базу ConverterDB (створює сховище history при першому запуску), повертає Promise з db.
+function openDB() {
+    if (dbPromise) return dbPromise;
+    dbPromise = new Promise((resolve, reject) => {
+        if (!window.indexedDB) {
+            reject(new Error('IndexedDB недоступна'));
+            return;
+        }
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+        request.onupgradeneeded = event => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+            }
+        };
+
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+    dbPromise.catch(() => { dbPromise = null; });
+    return dbPromise;
+}
+
+// Додає запис у сховище (id генерує база); повертає згенерований id.
+async function addItem(item) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const request = tx.objectStore(STORE_NAME).put(item);
+        tx.oncomplete = () => resolve(request.result);
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error);
+    });
+}
+
+// Оновлює наявний запис: put із тим самим id перезаписує його без дубліката.
+async function updateItem(item) {
+    return addItem(item);
+}
+
+// Читає всі записи зі сховища транзакцією readonly.
+async function getAllItems() {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const request = tx.objectStore(STORE_NAME).getAll();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+// Видаляє запис за ключем id.
+async function deleteItem(id) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        tx.objectStore(STORE_NAME).delete(id);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error);
+    });
+}
+
+async function migrateFromLocalStorage() {
+    if (localStorage.getItem('historyMigrated') === 'true') return;
+
+    const existing = await getAllItems();
+    const oldRecords = loadFromLocalStorage();
+
+    if (existing.length === 0 && oldRecords.length > 0) {
+        for (const record of oldRecords) {
+            await addItem(record);
+        }
+    }
+    localStorage.setItem('historyMigrated', 'true');
+}
 
 const ConverterForm = {
     props: ['units'],
@@ -125,7 +237,7 @@ createApp({
             ],
             activeTypeId: 'currency',
             history: [],
-            nextHistoryId: 1,
+            dbError: '',
             loading: false,
             error: '',
             ratesInfo: ''
@@ -140,14 +252,34 @@ createApp({
         setType(id) {
             this.activeTypeId = id;
         },
-        addHistory(record) {
-            this.history.push({
-                id: this.nextHistoryId++,
-                amount: record.amount,
-                from: record.from,
-                to: record.to,
-                result: formatNumber(record.result)
-            });
+        async refreshHistory() {
+            const all = await getAllItems();
+            all.sort((a, b) => b.timestamp - a.timestamp);
+            this.history = all.slice(0, 10);
+        },
+        async addHistory(record) {
+            try {
+                await addItem({
+                    amount: record.amount,
+                    from: record.from,
+                    to: record.to,
+                    result: formatNumber(record.result),
+                    timestamp: Date.now()
+                });
+                await this.refreshHistory();
+            } catch (error) {
+                this.dbError = 'Не вдалося зберегти запис: сховище IndexedDB недоступне (можливо, увімкнений приватний режим).';
+                console.error(error);
+            }
+        },
+        async initHistory() {
+            try {
+                await migrateFromLocalStorage();
+                await this.refreshHistory();
+            } catch (error) {
+                this.dbError = 'Історія недоступна: сховище IndexedDB не вдалося відкрити.';
+                console.error(error);
+            }
         },
         async loadData() {
             this.loading = true;
@@ -175,6 +307,7 @@ createApp({
         }
     },
     mounted() {
+        this.initHistory();
         this.loadData();
     }
 }).mount('#app');
