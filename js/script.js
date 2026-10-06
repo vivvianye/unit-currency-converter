@@ -1,182 +1,180 @@
-const exchangeRates = {
-    USD: 1,
-    EUR: 0.92,
-    UAH: 41.5
-};
+// Фреймворк: Vue 3 (CDN). Обрано, бо v-model дає двостороннє зв'язування полів форми
+// без зайвого коду, а computed автоматично перераховує результат конвертації.
+// Ручний DOM-код з практикумів 7-9 (renderRates, renderHistory, обробники submit/change,
+// querySelector/innerHTML) ЗАМІНЕНО Vue-компонентами нижче.
 
-const listContainer = document.querySelector('#rates-list');
-const BIG_RATE_THRESHOLD = 10;
+/*
+ * Ручний DOM-код практикумів 7–9 замінено компонентами Vue:
+ * renderRates / renderHistory  -> v-for у шаблоні;
+ * convertCurrency / updateResult -> computed result у ConverterForm;
+ * submit-обробник -> @submit.prevent + $emit('convert');
+ * showLoading / showError -> стани loading і error + v-if.
+ * querySelector та innerHTML для цієї ділянки більше не використовуються.
+ */
 
-const loadingEl = document.querySelector('#loading');
-
-function showLoading(isLoading) {
-    loadingEl.hidden = !isLoading;
-}
-
-const errorEl = document.querySelector('#error');
-
-function showError(message) {
-    errorEl.textContent = message;
-    errorEl.hidden = !message;
-}
-
+const { createApp } = Vue;
+const formatNumber = n => (n === 0 ? '0.00' : String(Number(n.toPrecision(6))));
 const API_URL = 'https://api.frankfurter.dev/v2/rate/usd/uah';
 
-// Функція перебирає об'єкт із курсами валют і виводить кожен курс у консоль.
-function showRates(ratesObj) {
-    console.log('Актуальні курси валют:');
-    const currencyKeys = Object.keys(ratesObj);
-    for (const currency of currencyKeys) {
-        console.log(`Валюта: ${currency}, курс: ${ratesObj[currency]}`);
-    }
-}
-
-// Стрілкова функція, яка приймає початкову суму та курс, і повертає результат конвертації.
-const convert = (amount, rate) => amount * rate;
-
-// Функція обчислює підсумкову суму та перевіряє, чи перевищує вона заданий ліміт (5000).
-function checkAmount(amount, rate) {
-    const maxSum = 5000;
-    const result = convert(amount, rate);
-    console.log(`Результат конвертації: ${result} UAH`);
-    if (result > maxSum) {
-        console.log('Це занадто велика сума!');
-    } else {
-        console.log('Це невелика сума.');
-    }
-}
-
-// Рендер списку валют: очищає #rates-list і для кожної пари [валюта, курс]
-// створює li з текстом «USD: 1», атрибутом data-rate
-// та класом big-rate, якщо курс більший за поріг.
-function renderRates(ratesObj) {
-    listContainer.innerHTML = '';
-
-    Object.entries(ratesObj).forEach(([currency, rate]) => {
-        const item = document.createElement('li');
-        item.textContent = `${currency}: ${rate}`;
-        item.dataset.rate = rate;
-
-        if (rate > BIG_RATE_THRESHOLD) {
-            item.classList.add('big-rate');
+const ConverterForm = {
+    props: ['units'],
+    emits: ['convert'],
+    data() {
+        return {
+            amount: '',
+            fromUnit: this.units[0].id,
+            toUnit: this.units[1].id
+        };
+    },
+    computed: {
+        fromData() {
+            return this.units.find(unit => unit.id === this.fromUnit);
+        },
+        toData() {
+            return this.units.find(unit => unit.id === this.toUnit);
+        },
+        result() {
+            const amount = Number(this.amount);
+            if (!(amount > 0)) return 0;
+            return amount / this.fromData.rate * this.toData.rate;
+        },
+        resultText() {
+            return formatNumber(this.result);
         }
-
-        listContainer.append(item);
-    });
-}
-
-renderRates(exchangeRates);
-
-showRates(exchangeRates);
-
-const ratesCount = document.querySelector('#rates-count');
-ratesCount.textContent = `Кількість валют: ${Object.keys(exchangeRates).length}`;
-
-const testResult = convert(100, exchangeRates.UAH);
-console.log(`Тест Кроку 7 (100 USD у гривнях): ${testResult} UAH`);
-
-checkAmount(150, exchangeRates.UAH);
-
-const amountInput = document.querySelector('#amount');
-const fromSelect = document.querySelector('#from');
-const toSelect = document.querySelector('#to');
-const form = document.querySelector('form');
-
-const conversionHistory = [];
-
-function convertCurrency(amount, from, to) {
-    return convert(amount, exchangeRates[to] / exchangeRates[from]);
-}
-
-const historyList = document.querySelector('#history-list');
-
-function renderHistory(records) {
-    historyList.innerHTML = '';
-
-    records.forEach(record => {
-        const item = document.createElement('li');
-        item.textContent = `${record.amount} ${record.from} = ${record.result.toFixed(2)} ${record.to}`;
-        historyList.append(item);
-    });
-}
-
-// Обробник submit: скасовує перезавантаження, рахує конвертацію,
-// додає запис в історію, перемальовує список і очищає форму.
-form.addEventListener('submit', event => {
-    event.preventDefault();
-    const amount = Number(amountInput.value);
-    const from = fromSelect.value.toUpperCase();
-    const to = toSelect.value.toUpperCase();
-
-    const result = convertCurrency(amount, from, to);
-    const record = { amount, from, to, result };
-    conversionHistory.push(record);
-
-    renderHistory(conversionHistory);
-
-    form.reset();
-});
-
-// Валідація: якщо сума менша або дорівнює нулю, показуємо власне повідомлення.
-amountInput.addEventListener('input', () => {
-    if (amountInput.value !== '' && Number(amountInput.value) <= 0) {
-        amountInput.setCustomValidity('Сума має бути додатною');
-    } else {
-        amountInput.setCustomValidity('');
-    }
-});
-
-const resultSpan = document.querySelector('.result span');
-
-function updateResult() {
-    const amount = Number(amountInput.value);
-    const from = fromSelect.value.toUpperCase();
-    const to = toSelect.value.toUpperCase();
-
-    if (amount > 0) {
-        resultSpan.textContent = convertCurrency(amount, from, to).toFixed(2);
-    } else {
-        resultSpan.textContent = '0.00';
-    }
-}
-
-// Обробники change: при зміні валюти одразу перераховуємо результат без сабміту.
-fromSelect.addEventListener('change', updateResult);
-toSelect.addEventListener('change', updateResult);
-
-/**
- * Завантажує курс USD → UAH з Frankfurter API
- * (https://api.frankfurter.dev/v2), перевіряє статус відповіді,
- * виводить дані через renderRates і обробляє помилки.
- */
-async function loadData() {
-    showLoading(true);
-    try {
-        showError('');
-        const response = await fetch(API_URL);
-        if (response.status === 422 || response.status === 404) {
-            throw new Error('INVALID_CURRENCY');
-        } if (!response.ok) {
-            throw new Error(`Сервер відповів кодом ${response.status}`);
+    },
+    methods: {
+        swap() {
+            [this.fromUnit, this.toUnit] = [this.toUnit, this.fromUnit];
+        },
+        submit() {
+            const amount = Number(this.amount);
+            if (!(amount > 0)) return;
+            this.$emit('convert', {
+                amount,
+                from: this.fromData.label,
+                to: this.toData.label,
+                result: this.result
+            });
+            this.amount = '';
         }
-        const data = await response.json();
-        console.log(data);
-        renderRates({ [data.quote]: data.rate });
-        ratesCount.textContent = `1 ${data.base} = ${data.rate} ${data.quote} (станом на ${data.date})`;
-        
-    } catch (error) {
-        listContainer.replaceChildren();
-        if (error.message === 'INVALID_CURRENCY') {
-            showError('Перевірте код валюти.');
-        } else {
-            showError('Не вдалося завантажити курси валют. Спробуйте пізніше.');
-        }
-        console.error(error);
-    } finally {
-        showLoading(false);
-    }
-}
-loadData();
+    },
+    template: `
+        <section>
+            <h2>Форма конвертації</h2>
+            <form @submit.prevent="submit">
+                <label for="amount">Значення:</label>
+                <input type="number" id="amount" name="amount" min="0.01" step="any" required
+                       v-model.number="amount">
 
-const refreshBtn = document.querySelector('#refresh-btn');
-refreshBtn.addEventListener('click', loadData);
+                <div class="fields">
+                    <label for="from">З:</label>
+                    <select id="from" name="from" v-model="fromUnit">
+                        <option v-for="unit in units" :key="unit.id" :value="unit.id">{{ unit.label }}</option>
+                    </select>
+                    <button type="button" class="swap-btn" aria-label="Поміняти місцями" @click="swap">⇄</button>
+                    <label for="to">В:</label>
+                    <select id="to" name="to" v-model="toUnit">
+                        <option v-for="unit in units" :key="unit.id" :value="unit.id">{{ unit.label }}</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="submit-btn">Конвертувати</button>
+            </form>
+
+            <section class="result">
+                <h3>Результат: <span>{{ resultText }}</span> {{ toData.label }}</h3>
+            </section>
+        </section>`
+};
+
+createApp({
+    components: { ConverterForm },
+    data() {
+        return {
+            types: [
+                {
+                    id: 'currency',
+                    name: 'Валюта',
+                    units: [
+                        { id: 'usd', label: 'USD', rate: 1 },
+                        { id: 'eur', label: 'EUR', rate: 0.92 },
+                        { id: 'uah', label: 'UAH', rate: 41.5 }
+                    ]
+                },
+                {
+                    id: 'length',
+                    name: 'Довжина',
+                    units: [
+                        { id: 'm', label: 'м', rate: 1 },
+                        { id: 'km', label: 'км', rate: 0.001 },
+                        { id: 'cm', label: 'см', rate: 100 },
+                        { id: 'mi', label: 'милі', rate: 0.000621371 },
+                        { id: 'ft', label: 'фути', rate: 3.28084 }
+                    ]
+                },
+                {
+                    id: 'weight',
+                    name: 'Вага',
+                    units: [
+                        { id: 'kg', label: 'кг', rate: 1 },
+                        { id: 'g', label: 'г', rate: 1000 },
+                        { id: 'lb', label: 'фунти', rate: 2.20462 },
+                        { id: 'oz', label: 'унції', rate: 35.274 }
+                    ]
+                }
+            ],
+            activeTypeId: 'currency',
+            history: [],
+            nextHistoryId: 1,
+            loading: false,
+            error: '',
+            ratesInfo: ''
+        };
+    },
+    computed: {
+        activeType() {
+            return this.types.find(type => type.id === this.activeTypeId);
+        }
+    },
+    methods: {
+        setType(id) {
+            this.activeTypeId = id;
+        },
+        addHistory(record) {
+            this.history.push({
+                id: this.nextHistoryId++,
+                amount: record.amount,
+                from: record.from,
+                to: record.to,
+                result: formatNumber(record.result)
+            });
+        },
+        async loadData() {
+            this.loading = true;
+            this.error = '';
+            try {
+                const response = await fetch(API_URL);
+                if (response.status === 422 || response.status === 404) {
+                    throw new Error('INVALID_CURRENCY');
+                }
+                if (!response.ok) {
+                    throw new Error(`Сервер відповів кодом ${response.status}`);
+                }
+                const data = await response.json();
+                const currency = this.types.find(type => type.id === 'currency');
+                currency.units.find(unit => unit.id === 'uah').rate = data.rate;
+                this.ratesInfo = `1 ${data.base} = ${data.rate} ${data.quote} (станом на ${data.date})`;
+            } catch (error) {
+                this.error = error.message === 'INVALID_CURRENCY'
+                    ? 'Перевірте код валюти.'
+                    : 'Не вдалося завантажити курси валют. Спробуйте пізніше.';
+                console.error(error);
+            } finally {
+                this.loading = false;
+            }
+        }
+    },
+    mounted() {
+        this.loadData();
+    }
+}).mount('#app');
