@@ -14,40 +14,73 @@
     </header>
 
     <div id="app">
+        <nav>
+            <a href="#/" data-link>Конвертер</a>
+            <a href="#/history" data-link> Історія</a>
+        </nav>
+
+
         <main>
-            <section class="types">
-                <h2>Вибір типу конвертації</h2>
-                <button v-for="type in types" :key="type.id" type="button"
-                        :class="{ active: type.id === activeTypeId }"
-                        @click="setType(type.id)">{{ type.name }}
-                </button>
+            <template v-if="route && route.view === 'home'">
+                <section class="types">
+                    <h2>Вибір типу конвертації</h2>
+                    <button v-for="type in types" :key="type.id" type="button"
+                            :class="{ active: type.id === activeTypeId }"
+                            @click="setType(type.id)">{{ type.name }}
+                    </button>
+                </section>
+
+                <converter-form :units="activeType.units" :key="activeType.id" @convert="addHistory"></converter-form>
+
+                <section class="rates" v-if="activeType.id === 'currency'">
+                    <h2>Курси валют</h2>
+                    <button type="button" @click="loadData">Оновити</button>
+                    <p v-if="loading">Завантаження…</p>
+                    <p v-if="error">{{ error }}</p>
+                    <ul>
+                        <li v-for="unit in activeType.units" :key="unit.id">{{ unit.label }}: {{ unit.rate }}</li>
+                    </ul>
+                    <p>Кількість валют: {{ activeType.units.length }}</p>
+                    <p v-if="ratesInfo">{{ ratesInfo }}</p>
+                </section>
+            </template>
+
+            <template v-else-if="route && route.view === 'history'">
+                <section class="history">
+                    <h2>Історія конвертацій (останні 10)</h2>
+                    <p v-if="dbError">{{ dbError }}</p>
+                    <ul>
+                        <li v-for="record in history" :key="record.id">
+                            <a :href="'#/history/' + record.id" data-link>
+                                {{ record.amount }} {{ record.from }} = {{ record.result }} {{ record.to }}
+                            </a>
+                        </li>
+                    </ul>
+                </section>
+
+                <history-chart :records="history"></history-chart>
+            </template>
+
+            <template v-else-if="route && route.view === 'historyDetail'">
+                <section class="history-detail">
+                    <h2>Деталі конвертації</h2>
+                    <p v-if="!recordLoaded">Завантаження…</p>
+                    <ul v-else-if="record">
+                        <li>З: {{ record.from }}</li>
+                        <li>В: {{ record.to }}</li>
+                        <li>Сума: {{ record.amount }}</li>
+                        <li>Результат: {{ record.result }}</li>
+                        <li>Час: {{ formatDate(record.timestamp) }}</li>
+                    </ul>
+                    <p v-else>Запис не знайдено.</p>
+                    <a href="#/history" data-link>← До історії</a>
+                </section>
+            </template>
+
+            <section v-else>
+                <h2>Сторінку не знайдено</h2>
+                <a href="#/" data-link>На головну</a>
             </section>
-
-            <converter-form :units="activeType.units" :key="activeType.id" @convert="addHistory"></converter-form>
-
-            <section class="rates" v-if="activeType.id === 'currency'">
-                <h2>Курси валют</h2>
-                <button type="button" @click="loadData">Оновити</button>
-                <p v-if="loading">Завантаження…</p>
-                <p v-if="error">{{ error }}</p>
-                <ul>
-                    <li v-for="unit in activeType.units" :key="unit.id">{{ unit.label }}: {{ unit.rate }}</li>
-                </ul>
-                <p>Кількість валют: {{ activeType.units.length }}</p>
-                <p v-if="ratesInfo">{{ ratesInfo }}</p>
-            </section>
-
-            <section class="history">
-                <h2>Історія конвертацій (останні 10)</h2>
-                <p v-if="dbError">{{ dbError }}</p>
-                <ul>
-                    <li v-for="record in history" :key="record.id">
-                        {{ record.amount }} {{ record.from }} = {{ record.result }} {{ record.to }}
-                    </li>
-                </ul>
-            </section>
-
-            <history-chart :records="history"></history-chart>
         </main>
     </div>
 

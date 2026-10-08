@@ -102,7 +102,16 @@ async function getAllItems() {
     });
 }
 
-// Видаляє запис за ключем id.
+async function getItem(id) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const request = tx.objectStore(STORE_NAME).get(id);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
 async function deleteItem(id) {
     const db = await openDB();
     return new Promise((resolve, reject) => {
@@ -127,6 +136,35 @@ async function migrateFromLocalStorage() {
     }
     localStorage.setItem('historyMigrated', 'true');
 }
+// ПР13: hash-роутинг. Таблиця маршрутів: шлях -> назва view, яку показує шаблон (index.html)
+const routes = [
+    { path: '/', view: 'home' },
+    { path: '/history', view: 'history' },
+    { path: '/history/:id', view: 'historyDetail' }
+];
+
+function getPath() {
+    return location.hash.slice(1) || '/';
+}
+
+function matchRoute(path) {
+    const pathParts = path.split('/').filter(Boolean);
+    for (const route of routes) {
+        const routeParts = route.path.split('/').filter(Boolean);
+        if (routeParts.length !== pathParts.length) continue;
+        const params = {};
+        const isMatch = routeParts.every((part, i) => {
+            if (part.startsWith(':')) {
+                params[part.slice(1)] = pathParts[i];
+                return true;
+            }
+            return part === pathParts[i];
+        });
+        if (isMatch) return { view: route.view, params };
+    }
+    return null;
+}
+
 
 const ConverterForm = {
     props: ['units'],
@@ -301,7 +339,8 @@ const HistoryChart = {
 
 createApp({
     components: { ConverterForm, HistoryChart },
-    data() {
+    data()
+    {
         return {
             types: [
                 {
@@ -340,7 +379,10 @@ createApp({
             dbError: '',
             loading: false,
             error: '',
-            ratesInfo: ''
+            ratesInfo: '',
+            route: matchRoute(getPath()),
+            record: null,
+            recordLoaded: false
         };
     },
     computed: {
@@ -351,6 +393,26 @@ createApp({
     methods: {
         setType(id) {
             this.activeTypeId = id;
+        },
+        formatDate(timestamp) {
+            return new Date(timestamp).toLocaleString('uk-UA');
+        },
+        async render() {
+            const path = getPath();
+            const route = matchRoute(path);
+            this.route = route;
+            this.record = null;
+            this.recordLoaded = false;
+            if (route && route.view === 'historyDetail') {
+                try {
+                    const record = await getItem(Number(route.params.id));
+                    if (path !== getPath()) return; // користувач уже перейшов на інший маршрут
+                    this.record = record || null;
+                } catch (error) {
+                    console.error(error);
+                }
+                this.recordLoaded = true;
+            }
         },
         async refreshHistory() {
             const all = await getAllItems();
@@ -409,6 +471,8 @@ createApp({
     mounted() {
         this.initHistory();
         this.loadData();
+        window.addEventListener('hashchange', this.render);
+        this.render();
     }
 }).mount('#app');
 
