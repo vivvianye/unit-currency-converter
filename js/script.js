@@ -199,8 +199,108 @@ const ConverterForm = {
         </section>`
 };
 
+const HistoryChart = {
+    props: ['records'],
+    data() {
+        return { frameId: null };
+    },
+    computed: {
+        // Результати конвертацій від найстаршої до найновішої
+        values() {
+            return [...this.records].reverse().map(record => Number(record.result));
+        }
+    },
+    watch: {
+        records() {
+            this.animate();
+        }
+    },
+    mounted() {
+        this.animate();
+    },
+    beforeUnmount() {
+        this.stop();
+    },
+    methods: {
+        // Малює один кадр; progress (0..1) - яка частина лінії вже намальована
+        draw(progress) {
+            const canvas = this.$refs.canvas;
+            const ctx = canvas.getContext('2d');
+            const values = this.values;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (values.length === 0) return;
+
+            const pad = 20;
+            const min = Math.min(...values);
+            const max = Math.max(...values);
+            const points = values.map((value, i) => ({
+                x: values.length > 1
+                    ? pad + (canvas.width - 2 * pad) * i / (values.length - 1)
+                    : canvas.width / 2,
+                y: max === min
+                    ? canvas.height / 2
+                    : canvas.height - pad - (value - min) / (max - min) * (canvas.height - 2 * pad)
+            }));
+            // Лінія, що з'єднує точки; малюємо лише частину, відповідну progress
+            const drawn = progress * (points.length - 1);
+            const full = Math.floor(drawn);
+            ctx.strokeStyle = '#2f7d32';
+            ctx.fillStyle = '#2f7d32';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            for (let i = 1; i <= full; i++) {
+                ctx.lineTo(points[i].x, points[i].y);
+            }
+            if (full < points.length - 1) {
+                const t = drawn - full;
+                const a = points[full];
+                const b = points[full + 1];
+                ctx.lineTo(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t);
+            }
+            ctx.stroke();
+            points.forEach((point, i) => {
+                if (i <= drawn) {
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+        },
+        // Цикл анімації: оновлюємо progress, перемальовуємо кадр, плануємо наступний
+        animate() {
+            this.stop();
+            let start = null;
+            const step = timestamp => {
+                if (start === null) start = timestamp;
+                const progress = Math.min((timestamp - start) / 700, 1);
+                this.draw(progress);
+                if (progress < 1) {
+                    this.frameId = requestAnimationFrame(step);
+                } else {
+                    this.frameId = null;
+                }
+            };
+            this.frameId = requestAnimationFrame(step);
+        },
+        // Зупиняє поточний цикл анімації
+        stop() {
+            if (this.frameId !== null) {
+                cancelAnimationFrame(this.frameId);
+                this.frameId = null;
+            }
+        }
+    },
+    template: `
+        <section class="chart">
+            <h2>Графік історії конвертацій</h2>
+            <canvas ref="canvas" width="400" height="200"></canvas>
+            <button type="button" @click="animate">Програти знову</button>
+        </section>`
+};
+
 createApp({
-    components: { ConverterForm },
+    components: { ConverterForm, HistoryChart },
     data() {
         return {
             types: [
@@ -311,3 +411,5 @@ createApp({
         this.loadData();
     }
 }).mount('#app');
+
+
