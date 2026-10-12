@@ -41,6 +41,7 @@
                         <li v-for="unit in activeType.units" :key="unit.id">{{ unit.label }}: {{ unit.rate }}</li>
                     </ul>
                     <p>Кількість валют: {{ activeType.units.length }}</p>
+                    <!-- Vue екранує HTML, v-html не використовується -->
                     <p v-if="ratesInfo">{{ ratesInfo }}</p>
                 </section>
             </template>
