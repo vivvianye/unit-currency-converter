@@ -26,7 +26,7 @@
 
 const { createApp } = Vue;
 const formatNumber = n => (n === 0 ? '0.00' : String(Number(n.toPrecision(6))));
-const API_URL = 'https://api.frankfurter.dev/v2/rate/usd/uah';
+const API_URL = '/api/rates?from=USD&to=UAH';
 
 const LS_KEY = 'converterHistory';
 
